@@ -4,8 +4,8 @@
   "description": "Generate, view, and share rent & utility bills easily.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0f0e17",
-  "theme_color": "#0f0e17",
+  "background_color": "#1b092c",
+  "theme_color": "#1b092c",
   "orientation": "portrait-primary",
   "icons": [
     {
