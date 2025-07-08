@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1b092c">
-    <title>Enhanced Rent & Utilities Bill Generator</title>
+    <title>Rent & Utilities Bill Generator with UPI QR</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         :root {
             --bg-primary: #0f0e17;
@@ -354,7 +353,7 @@
 
         .close-modal {
             position: absolute;
-            top: 15px;
+            top: 10px;
             right: 15px;
             font-size: 2rem;
             color: var(--neon-pink);
@@ -548,6 +547,56 @@
             background: rgba(127, 90, 240, 0.1);
             border-radius: 8px;
             padding: 15px;
+        }
+        
+        /* QR Code Section */
+        .bill-qr-section {
+            margin-top: 25px;
+            text-align: center;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            border-top: 2px dashed #eee;
+        }
+        
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            margin: 15px 0;
+        }
+        
+        #paymentQR {
+            width: 180px;
+            height: 180px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .upi-details {
+            font-size: 1.1rem;
+            color: #333;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .upi-id {
+            font-weight: 600;
+            color: var(--accent-purple);
+            background: rgba(127, 90, 240, 0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+        
+        .payment-note {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 10px;
+            text-align: center;
         }
 
         .modal-buttons {
@@ -784,6 +833,10 @@
                 min-width: 100%;
             }
             
+            .bill-qr-section {
+                padding: 15px;
+            }
+            
             .bill-total {
                 font-size: 1.2rem;
             }
@@ -888,9 +941,11 @@
     <!-- Bill Preview Modal -->
     <div id="billModal" class="modal">
         <div class="modal-content">
+            <h2 style="margin-bottom: 20px;"><i class="fas fa-file-invoice" style="margin-right: 5px;"></i> Bill Preview</h2>
             <span class="close-modal">&times;</span>
             
-            <div class="bill-preview" id="billPreview">
+            <div class="bill-preview" id="billPreview" style="border: 1px solid var(--accent-purple);
+            border-radius: 8px;">
                 <div class="bill-header">
                     <h2 class="bill-title">
                         <i class="fas fa-file-invoice"></i> Rent & Utilities Bill
@@ -987,6 +1042,21 @@
                     <span><i class="fas fa-receipt"></i> Total Amount:</span>
                     <span>₹<span id="totalAmount">0</span></span>
                 </div>
+                
+                <!-- QR Code Payment Section -->
+                <div class="bill-qr-section">
+                    <h3><i class="fas fa-qrcode"></i> Pay with UPI</h3>
+                    <div class="qr-container">
+                        <canvas id="paymentQR"></canvas>
+                    </div>
+                    <div class="upi-details">
+                        <span style="font-size: 13px !important;"><i class="fas fa-user" ></i> Name: Shankar Debnath</span>
+                        <span class="upi-id" style="font-size: 13px; min-width: 104%; padding-left: 4px !important; padding-right: 4px !important ; margin-left: 0 !important; margin-right: 0 !important;"><i class="fas fa-id-card"></i> UPI ID: debnathshankar.1971-1@okaxis</span>
+                    </div>
+                    <div class="payment-note" style="font-size: 13px !important;">
+                        <i class="fas fa-info-circle"></i> Scan the QR code to pay instantly via any UPI app
+                    </div>
+                </div>
             </div>
             
             <div class="modal-buttons">
@@ -996,9 +1066,6 @@
                 <button id="markPaidBtn" class="btn btn-paid">
                     <i class="fas fa-check-circle"></i> Mark as Paid
                 </button>
-                <div class="download-info">
-                    <i class="fas fa-info-circle"></i> Bill images are generated in high quality (2x resolution)
-                </div>
             </div>
         </div>
     </div>
@@ -1058,6 +1125,14 @@
                     </div>
                 </div>
                 
+                <div class="settings-section">
+                    <h3><i class="fas fa-qrcode"></i> UPI Settings</h3>
+                    <div class="form-group">
+                        <label for="upiIdSetting">UPI ID</label>
+                        <input type="text" id="upiIdSetting" required value="debnathshankar.1971-1@okaxis">
+                    </div>
+                </div>
+                
                 <button type="submit" class="btn">
                     <i class="fas fa-save"></i> Save Settings
                 </button>
@@ -1091,7 +1166,8 @@
             rentAmount: 4944,
             waterAmount: 150,
             electricityRate: 10,
-            acRate: 13
+            acRate: 13,
+            upiId: "debnathshankar.1971-1@okaxis"
         };
         
         let bills = JSON.parse(localStorage.getItem('rentBills')) || [];
@@ -1164,6 +1240,9 @@
             document.getElementById('electricityRateSetting').value = settings.electricityRate;
             document.getElementById('acRateSetting').value = settings.acRate;
             
+            // UPI ID
+            document.getElementById('upiIdSetting').value = settings.upiId;
+            
             // Update UI elements
             document.getElementById('ownerName').textContent = settings.ownerName;
             document.getElementById('ownerPhone').textContent = settings.ownerPhone;
@@ -1188,6 +1267,7 @@
             settings.waterAmount = parseFloat(document.getElementById('waterAmountSetting').value);
             settings.electricityRate = parseFloat(document.getElementById('electricityRateSetting').value);
             settings.acRate = parseFloat(document.getElementById('acRateSetting').value);
+            settings.upiId = document.getElementById('upiIdSetting').value;
             
             // Save to localStorage
             localStorage.setItem('rentSettings', JSON.stringify(settings));
@@ -1353,8 +1433,47 @@
                 'btn btn-paid' : 
                 'btn btn-secondary';
             
+            // Generate payment QR code
+            generatePaymentQR(bill.total);
+            
             // Show modal
             billModal.classList.add('active');
+        }
+        
+        // Generate QR code for payment
+        function generatePaymentQR(amount) {
+            const qrCanvas = document.getElementById('paymentQR');
+            const upiId = settings.upiId;
+            const payeeName = settings.ownerName;
+            
+            // Format amount to have two decimal places
+            const formattedAmount = parseFloat(amount).toFixed(2);
+            
+            // Create UPI payment link
+            const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(payeeName)}&am=${formattedAmount}&cu=INR`;
+            
+            // Clear the canvas
+            const ctx = qrCanvas.getContext('2d');
+            ctx.clearRect(0, 0, qrCanvas.width, qrCanvas.height);
+            
+            // Generate new QR code
+            QRCode.toCanvas(qrCanvas, upiLink, {
+                width: 180,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('QR generation error:', error);
+                    // Fallback text
+                    ctx.font = "14px Arial";
+                    ctx.fillStyle = "black";
+                    ctx.textAlign = "center";
+                    ctx.fillText("QR Code Error", qrCanvas.width/2, qrCanvas.height/2);
+                }
+            });
         }
         
         // New bill button on form
@@ -1399,6 +1518,11 @@
             shareBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating Bill...';
             shareBtn.disabled = true;
             
+            // Temporarily hide the status indicator for download
+            const statusElement = document.getElementById('billStatus');
+            const originalDisplay = statusElement.style.display;
+            statusElement.style.display = 'none';
+            
             // Generate bill as image with HIGH QUALITY settings
             html2canvas(document.getElementById('billPreview'), {
                 scale: 3, // Triple the resolution for high quality
@@ -1406,12 +1530,21 @@
                 useCORS: true,
                 backgroundColor: "#ffffff",
                 onclone: (clonedDoc) => {
+                    // Also hide in the cloned document for extra safety
+                    const clonedStatus = clonedDoc.getElementById('billStatus');
+                    if (clonedStatus) {
+                        clonedStatus.style.display = 'none';
+                    }
+                    
                     // Ensure the preview looks good for capture
                     const preview = clonedDoc.getElementById('billPreview');
                     preview.style.boxShadow = 'none';
                     preview.style.transform = 'scale(1)';
                 }
             }).then(canvas => {
+                // Restore the status element
+                statusElement.style.display = originalDisplay;
+                
                 // Restore button state
                 shareBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Share via WhatsApp';
                 shareBtn.disabled = false;
@@ -1435,7 +1568,11 @@
                 document.body.removeChild(link);
                 
                 // Create WhatsApp share link
-                const text = encodeURIComponent("Here's your rent bill for this month");
+                const text = encodeURIComponent(
+                    `Here's your rent bill for this month\n` +
+                    `Total: ₹${currentBill.total.toFixed(2)}\n` +
+                    `Scan QR code to pay via any UPI App`
+                );
                 const phone = settings.tenantPhone.replace(/\D/g, ''); // Remove non-digit characters
                 const whatsappUrl = `https://wa.me/${phone}?text=${text}`;
                 
@@ -1444,6 +1581,9 @@
                     window.open(whatsappUrl, '_blank');
                 }, 500);
             }).catch(err => {
+                // Restore status element on error
+                statusElement.style.display = originalDisplay;
+                
                 console.error('Error generating bill image:', err);
                 shareBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Share via WhatsApp';
                 shareBtn.disabled = false;
@@ -1595,13 +1735,6 @@
                 prevBillsList.appendChild(billCard);
             });
         }
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/service-worker.js')
-        .then(reg => console.log('Service Worker registered:', reg.scope))
-        .catch(err => console.error('Service Worker failed:', err));
-}
     </script>
 </body>
 </html>
